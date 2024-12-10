@@ -85,12 +85,12 @@ clean: CMakeFiles/wavelet.dir/clean
 CMakeFiles/wavelet.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/wavelet.dir/build.make CMakeFiles/wavelet.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/wavelet.dir/build.make CMakeFiles/wavelet.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/dlee50/git/wavelet/wavelet/build/CMakeFiles --progress-num=1,2,3,4 "Built target wavelet"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/dlee50/git/wavelet/wavelet/build/CMakeFiles --progress-num=1,2,3,4,5 "Built target wavelet"
 .PHONY : CMakeFiles/wavelet.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/wavelet.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/dlee50/git/wavelet/wavelet/build/CMakeFiles 4
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/dlee50/git/wavelet/wavelet/build/CMakeFiles 5
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/wavelet.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/dlee50/git/wavelet/wavelet/build/CMakeFiles 0
 .PHONY : CMakeFiles/wavelet.dir/rule

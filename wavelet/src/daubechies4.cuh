@@ -6,6 +6,8 @@
 constexpr double sqrt3 = 1.73205080757;
 constexpr double daub = 5.65685424949;
 
+
+
 /* Host constants */
 
 const double _h[4] = {
@@ -27,12 +29,12 @@ const double _ig[4] = {
 
 /* Device constants */
 
-// extern __constant__ double g[4];
-// extern __constant__ double h[4];
-// extern __constant__ double ig[4];
-// extern __constant__ double ih[4];
+extern __constant__ double g[4];
+extern __constant__ double h[4];
+extern __constant__ double ig[4];
+extern __constant__ double ih[4];
 
-void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int doubechies_level);
+void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height,  int doubechies_level);
 
-// void run_haar_wavelet_gpu(float *channel_img, int width, int height, int haar_level);
+void run_haar_wavelet_gpu(float *channel_img, int width, int height, int haar_level);
 #endif

@@ -53,7 +53,7 @@ include_directories(
 #create an executable
 add_executable(wavelet
     src/daubechies4.cu
-    # src/haar.cu
+    src/haar.cu
     src/main.cpp
 )
 

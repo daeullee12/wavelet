@@ -2,6 +2,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/wavelet.dir/cmake_device_link.o"
   "CMakeFiles/wavelet.dir/src/daubechies4.cu.o"
   "CMakeFiles/wavelet.dir/src/daubechies4.cu.o.d"
+  "CMakeFiles/wavelet.dir/src/haar.cu.o"
+  "CMakeFiles/wavelet.dir/src/haar.cu.o.d"
   "CMakeFiles/wavelet.dir/src/main.cpp.o"
   "CMakeFiles/wavelet.dir/src/main.cpp.o.d"
   "wavelet"

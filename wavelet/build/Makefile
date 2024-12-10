@@ -153,6 +153,30 @@ src/daubechies4.cu.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/wavelet.dir/build.make CMakeFiles/wavelet.dir/src/daubechies4.cu.s
 .PHONY : src/daubechies4.cu.s
 
+src/haar.o: src/haar.cu.o
+.PHONY : src/haar.o
+
+# target to build an object file
+src/haar.cu.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/wavelet.dir/build.make CMakeFiles/wavelet.dir/src/haar.cu.o
+.PHONY : src/haar.cu.o
+
+src/haar.i: src/haar.cu.i
+.PHONY : src/haar.i
+
+# target to preprocess a source file
+src/haar.cu.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/wavelet.dir/build.make CMakeFiles/wavelet.dir/src/haar.cu.i
+.PHONY : src/haar.cu.i
+
+src/haar.s: src/haar.cu.s
+.PHONY : src/haar.s
+
+# target to generate assembly for a file
+src/haar.cu.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/wavelet.dir/build.make CMakeFiles/wavelet.dir/src/haar.cu.s
+.PHONY : src/haar.cu.s
+
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
 
@@ -189,6 +213,9 @@ help:
 	@echo "... src/daubechies4.o"
 	@echo "... src/daubechies4.i"
 	@echo "... src/daubechies4.s"
+	@echo "... src/haar.o"
+	@echo "... src/haar.i"
+	@echo "... src/haar.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"

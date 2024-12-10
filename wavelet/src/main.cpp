@@ -89,7 +89,7 @@ void run_haar_wavelet_cpu(float* img, int width, int height, int levels)
     delete[] wav_buf;
 }
 
-void cpu_d4_transform(double *src, double* dest, const int n)
+void cpu_d4_transform(float *src, float* dest, const int n)
 {
     
     if (n >= 4) 
@@ -114,12 +114,12 @@ void cpu_d4_transform(double *src, double* dest, const int n)
     }
 }
 
-double cpu_dwt(double* t, int N)
+float cpu_dwt(float* t, int N)
 {
     assert(check_power_two(N));
     int n=N;
     clock_t begin,end;
-    double *tmp = (double*)malloc(N*sizeof(double));
+    float *tmp = (float*)malloc(N*sizeof(float));
 
     if(!tmp)
     {
@@ -131,7 +131,7 @@ double cpu_dwt(double* t, int N)
     while(n >= 4) 
     {
         cpu_d4_transform(t,tmp,n);
-        memcpy(t,tmp,n*sizeof(double));
+        memcpy(t,tmp,n*sizeof(float));
 
         n >>= 1;
     }
@@ -143,16 +143,16 @@ double cpu_dwt(double* t, int N)
 }
 
 
-void run_daubechies4_wavelet_cpu(double* img, int width, int height, int levels)
+void run_daubechies4_wavelet_cpu(float* img, int width, int height, int levels)
 {
     if (!check_power_two(width) || !check_power_two(height)) {
         std::cerr << "Error: Width and height must be powers of two." << std::endl;
         return;
     }
 
-    const int size = width * height * sizeof(double);
-    double *frame_buf = new double[width * height];
-    double *wav_buf = new double[height];
+    const int size = width * height * sizeof(float);
+    float *frame_buf = new float[width * height];
+    float *wav_buf = new float[height];
 
     if (frame_buf == nullptr || wav_buf == nullptr) {
         std::cerr << "Failed to allocate memory for wavelet buffers" << std::endl;
@@ -200,11 +200,11 @@ void resize_to_power_of_two(unsigned char* src, unsigned char* dst, int src_widt
 void process_image(unsigned char* img, unsigned char* haar_output_img, unsigned char* daubechies_output_img, int width, int height, int channels, const std::string& mode, int haar_levels, int daubechies_levels)
 {
     float* channel_img = new float[width * height];
-    double* channel_img_double = new double[width * height];
-    if (channel_img == nullptr || channel_img_double == nullptr) {
+    float* daubechies_channel_img = new float[width * height];
+    if (channel_img == nullptr || daubechies_channel_img == nullptr) {
         std::cerr << "Failed to allocate memory for channel_img" << std::endl;
         delete[] channel_img;
-        delete[] channel_img_double;
+        delete[] daubechies_channel_img;
         return;
     }
 
@@ -213,14 +213,15 @@ void process_image(unsigned char* img, unsigned char* haar_output_img, unsigned 
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 channel_img[i * width + j] = static_cast<float>(img[(i * width + j) * channels + c]);
-                channel_img_double[i * width + j] = static_cast<double>(img[(i * width + j) * channels + c]);
+                daubechies_channel_img[i * width + j] = static_cast<float>(img[(i * width + j) * channels + c]);
             }
         }
 
         // Apply the wavelet transformations
         if (mode == "gpu") {
             std::cout << "Running GPU wavelet transformations" << std::endl;
-            run_daubechies4_wavelet_gpu(channel_img, width, height, daubechies_levels);
+            run_daubechies4_wavelet_gpu(daubechies_channel_img, width, height, daubechies_levels);
+            run_haar_wavelet_gpu(channel_img, width, height, haar_levels);
             cudaError_t cuda_status = cudaGetLastError();
             if (cuda_status != cudaSuccess) {
                 std::cerr << "CUDA Daubechies wavelet failed: " << cudaGetErrorString(cuda_status) << std::endl;
@@ -230,36 +231,36 @@ void process_image(unsigned char* img, unsigned char* haar_output_img, unsigned 
         } else if (mode == "cpu") {
             std::cout << "Running CPU wavelet transformations" << std::endl;
             run_haar_wavelet_cpu(channel_img, width, height, haar_levels);
-            run_daubechies4_wavelet_cpu(channel_img_double, width, height, daubechies_levels);
+            run_daubechies4_wavelet_cpu(daubechies_channel_img, width, height, daubechies_levels);
         }
 
         // Normalize the coefficients for visualization
         float max_val_haar = 0.0f;
-        double max_val_daubechies = 0.0;
+        float max_val_daubechies = 0.0;
         for (int i = 0; i < width * height; i++) {
             if (fabs(channel_img[i]) > max_val_haar) {
                 max_val_haar = fabs(channel_img[i]);
             }
-            if (fabs(channel_img_double[i]) > max_val_daubechies) {
-                max_val_daubechies = fabs(channel_img_double[i]);
+            if (fabs(daubechies_channel_img[i]) > max_val_daubechies) {
+                max_val_daubechies = fabs(daubechies_channel_img[i]);
             }
         }
         for (int i = 0; i < width * height; i++) {
             channel_img[i] = (channel_img[i] / max_val_haar) * 255.0f;
-            channel_img_double[i] = (channel_img_double[i] / max_val_daubechies) * 255.0;
+            daubechies_channel_img[i] = (daubechies_channel_img[i] / max_val_daubechies) * 255.0;
         }
 
         // Store the results back into the output images
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 haar_output_img[(i * width + j) * channels + c] = static_cast<unsigned char>(fabs(channel_img[i * width + j]));
-                daubechies_output_img[(i * width + j) * channels + c] = static_cast<unsigned char>(fabs(channel_img_double[i * width + j]));
+                daubechies_output_img[(i * width + j) * channels + c] = static_cast<unsigned char>(fabs(daubechies_channel_img[i * width + j]));
             }
         }
     }
 
     delete[] channel_img;
-    delete[] channel_img_double;
+    delete[] daubechies_channel_img;
 }
 
 int main(int argc, char** argv) {

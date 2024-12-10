@@ -1,13 +1,46 @@
 #include <cuda_runtime.h>
 // #include "../src/cuda_ptr.h"
-#include "utils.h"
+// #include "utils.h"
 #include "error.h"
 #include <iostream>
 // #include <studio.h>
+#include <cassert>
 
 
 // 1.0/ sqrt(2)
 #define haar 0.5f
+
+// // __host__ __device__
+// void disp(double *t, const int n)
+// {
+//     int i;
+//     for(i=0;i<n;i++)
+//     {
+//         printf("%lf ", t[i]);
+//     }
+//     printf("\n");
+// }
+// // __host__ __device__
+// void fill_rand(double *t, const int n)
+// {
+//     int i=0;
+//     for(;i<n;i++)
+//     {
+//         t[i] = ((double)rand())/INT_MAX;
+//     }
+// }
+
+
+// __host__ __device__
+inline double elapsed(clock_t start, clock_t end)
+{
+    return double(end - start) / CLOCKS_PER_SEC;
+}
+// __host__ __device__
+inline bool check_power_two(int x)
+{
+    return (x & (x - 1)) == 0;
+}
 
 /*  Haar wavelets forward horizontal and vertical passes 
     To get the full decomposition we apply one after the other
@@ -63,40 +96,19 @@ __global__ void gpu_low_pass(T* x, const int n)
     }
 }
 
-void mat_to_float(unsigned char* in, float* out, int width, int height)
-{
-    for(int i = 0; i < height; i++)
-    {
-        for(int j = 0; j < width; j++)
-        {
-            out[i * width + j] = static_cast<float>(in[i * width + j]);
-        }
-    }
-}
-
-void float_to_mat(float *in, unsigned char* out, int width, int height)
-{
-    for(int i = 0; i < height; i++)
-    {
-        for(int j = 0; j < width; j++)
-        {
-            out[i * width + j] = static_cast<unsigned char>(fabs(in[i * width + j]));
-        }
-    }
-}
 
 //define the haar wavelet transform
-void run_haar_wavelet_gpu(float *channel_img, int width, int height, int haar_level);
+void run_haar_wavelet_gpu(float *channel_img, int width, int height, int haar_level)
 {
     int N = width * height;
-    assert(check_power_two(N));
+    assert(check_power_two(width) && check_power_two(height));
 
     size_t size = N * sizeof(float);
     float *d_src, *d_dst;
-    int n = N;
 
     int threadsPerBlock = 16;
-    int blocksPerGrid = (n + threadsPerBlock - 1) / threadsPerBlock;
+    dim3 threads(threadsPerBlock, threadsPerBlock);
+    dim3 blocks((width + threadsPerBlock - 1) / threadsPerBlock, (height + threadsPerBlock - 1) / threadsPerBlock);
 
     HANDLE_ERROR(cudaMalloc((void**)&d_src, size));
     HANDLE_ERROR(cudaMalloc((void**)&d_dst, size));
@@ -106,18 +118,11 @@ void run_haar_wavelet_gpu(float *channel_img, int width, int height, int haar_le
     clock_t begin, end;
     begin = clock();
 
-    dim3 threads(threadsPerBlock, threadsPerBlock);
-    dim3 blocks(blocksPerGrid, blocksPerGrid);
-
-    for (int level = 0; level < haar_level; ++level)
-    {
-        blocksPerGrid = (n + threadsPerBlock - 1) / threadsPerBlock; // Update blocksPerGrid for each level
-        gpu_haar_horizontal<<<blocks, threads>>>(d_src, n, d_dst, width);
-        gpu_low_pass<<<blocks, threads>>>(d_dst, n);
-        gpu_haar_vertical<<<blocks, threads>>>(d_dst, n, d_src, width);
-        gpu_low_pass<<<blocks, threads>>>(d_src, n);
-        n = n >> 1;
-    }
+    // Perform a single level Haar wavelet transform
+    gpu_haar_horizontal<<<blocks, threads>>>(d_src, width, d_dst, width);
+    gpu_low_pass<<<blocks, threads>>>(d_dst, width);
+    gpu_haar_vertical<<<blocks, threads>>>(d_dst, height, d_src, width);
+    gpu_low_pass<<<blocks, threads>>>(d_src, height);
 
     cudaDeviceSynchronize();
     end = clock();
@@ -128,5 +133,3 @@ void run_haar_wavelet_gpu(float *channel_img, int width, int height, int haar_le
     cudaFree(d_src);
     cudaFree(d_dst);
 }
-
-
