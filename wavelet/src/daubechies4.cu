@@ -76,61 +76,6 @@ __global__ void wavelet_transform_columns(const float* input, float* low_output,
     }
 }
 
-// // Function to perform multi-level wavelet transform
-// void multi_level_wavelet_transform(float* d_image, int width, int height, int levels) {
-//     float *d_temp_low, *d_temp_high, *d_LL, *d_LH, *d_HL, *d_HH;
-
-//     for (int level = 0; level < levels; ++level) {
-//         int curr_width = width >> level;   // Divide by 2 for each level
-//         int curr_height = height >> level;
-
-
-//         HANDLE_ERROR(cudaMalloc((void**)&d_temp_low, curr_width * curr_height * sizeof(float) / 2));
-//         HANDLE_ERROR(cudaMalloc((void**)&d_temp_high, curr_width * curr_height * sizeof(float) / 2));
-//         HANDLE_ERROR(cudaMalloc((void**)&d_LL, (curr_width / 2) * (curr_height / 2) * sizeof(float)));
-//         HANDLE_ERROR(cudaMalloc((void**)&d_LH, (curr_width / 2) * (curr_height / 2) * sizeof(float)));
-//         HANDLE_ERROR(cudaMalloc((void**)&d_HL, (curr_width / 2) * (curr_height / 2) * sizeof(float)));
-//         HANDLE_ERROR(cudaMalloc((void**)&d_HH, (curr_width / 2) * (curr_height / 2) * sizeof(float)));
-
-//         // Grid and block sizes
-//         dim3 threads_per_block(16, 16);
-//         dim3 blocks_per_grid((curr_width / 2 + 15) / 16, (curr_height + 15) / 16);
-
-//         // Apply wavelet transform to rows
-//         wavelet_transform_rows<<<blocks_per_grid, threads_per_block>>>(
-//             d_image, d_temp_low, d_temp_high, curr_width, curr_height
-//         );
-//         cudaDeviceSynchronize();
-
-//         // Apply wavelet transform to columns
-//         dim3 blocks_per_grid_cols((curr_width / 2 + 15) / 16, (curr_height / 2 + 15) / 16);
-//         wavelet_transform_columns<<<blocks_per_grid_cols, threads_per_block>>>(
-//             d_temp_low, d_LL, d_LH, curr_width / 2, curr_height
-//         );
-//         cudaDeviceSynchronize();
-//         wavelet_transform_columns<<<blocks_per_grid_cols, threads_per_block>>>(
-//             d_temp_high, d_HL, d_HH, curr_width / 2, curr_height
-//         );
-//         cudaDeviceSynchronize();
-
-//         // Copy LL subband back to `d_image` for the next level
-
-
-//         cudaMemcpy(d_image, d_LL, (curr_width / 2) * (curr_height / 2) * sizeof(float), cudaMemcpyDeviceToDevice);
-//         cudaMemcpy(d_image + (curr_width / 2) * (curr_height / 2), d_LH, (curr_width / 2) * (curr_height / 2) * sizeof(float), cudaMemcpyDeviceToDevice);
-//         cudaMemcpy(d_image + (curr_width / 2) * curr_height, d_HL, (curr_width / 2) * (curr_height / 2) * sizeof(float), cudaMemcpyDeviceToDevice);
-//         cudaMemcpy(d_image + (curr_width / 2) * curr_height + (curr_width / 2) * (curr_height / 2), d_HH, (curr_width / 2) * (curr_height / 2) * sizeof(float), cudaMemcpyDeviceToDevice);
-
-//         // Free intermediate memory
-//         cudaFree(d_temp_low);
-//         cudaFree(d_temp_high);
-//         cudaFree(d_LL);
-//         cudaFree(d_LH);
-//         cudaFree(d_HL);
-//         cudaFree(d_HH);
-//     }
-// }
-
 
 void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int levels) {
         // Allocate device memory
@@ -152,23 +97,44 @@ void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int 
 
     // Transform rows
     wavelet_transform_rows<<<blocks_per_grid, threads_per_block>>>(d_image, d_temp_low, d_temp_high, width, height);
-
+    cudaDeviceSynchronize();
     // Transform columns
     dim3 blocks_per_grid_cols((width + 15) / 16, (height / 2 + 15) / 16);
     wavelet_transform_columns<<<blocks_per_grid_cols, threads_per_block>>>(
         d_temp_low, d_LL, d_LH, width / 2, height
     );
+    cudaDeviceSynchronize();
     wavelet_transform_columns<<<blocks_per_grid_cols, threads_per_block>>>(
         d_temp_high, d_HL, d_HH, width / 2, height
     );
+    cudaDeviceSynchronize();
 
     // Retrieve results
+    // cudaMemcpy(channel_img, d_LL, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
+    // cudaMemcpy(channel_img + (width / 2) * (height / 2), d_LH, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
+    // cudaMemcpy(channel_img + (width / 2) * (height), d_HL, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
+    // cudaMemcpy(channel_img + (width / 2) * (height / 2) * 2, d_HH, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
+    // Concatenate results back to channel_img
+    float *d_concat;
+    cudaMalloc(&d_concat, width * height * sizeof(float));
 
-    cudaMemcpy(channel_img, d_LL, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(channel_img + (width / 2) * (height / 2), d_LH, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(channel_img + (width / 2) * height, d_HL, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(channel_img + (width / 2) * height + (width / 2) * (height / 2), d_HH, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
+    // Copy LL to the top-left
+    cudaMemcpy2D(d_concat, width * sizeof(float), d_LL, (width / 2) * sizeof(float), (width / 2) * sizeof(float), height / 2, cudaMemcpyDeviceToDevice);
 
+    // Copy LH to the top-right
+    cudaMemcpy2D(d_concat + (width / 2), width * sizeof(float), d_LH, (width / 2) * sizeof(float), (width / 2) * sizeof(float), height / 2, cudaMemcpyDeviceToDevice);
+
+    // Copy HL to the bottom-left
+    cudaMemcpy2D(d_concat + (height / 2) * width, width * sizeof(float), d_HL, (width / 2) * sizeof(float), (width / 2) * sizeof(float), height / 2, cudaMemcpyDeviceToDevice);
+
+    // Copy HH to the bottom-right
+    cudaMemcpy2D(d_concat + (height / 2) * width + (width / 2), width * sizeof(float), d_HH, (width / 2) * sizeof(float), (width / 2) * sizeof(float), height / 2, cudaMemcpyDeviceToDevice);
+
+    // Copy concatenated result back to host
+    cudaMemcpy(channel_img, d_concat, width * height * sizeof(float), cudaMemcpyDeviceToHost);
+
+    // Free concatenated memory
+    cudaFree(d_concat);
     // Free device memory
     cudaFree(d_image);
     cudaFree(d_temp_low);
