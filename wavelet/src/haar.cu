@@ -161,7 +161,7 @@ void run_haar_wavelet_gpu(float *channel_img, int width, int height, int haar_le
     }
 
 
-    printf("GPU Elapsed: %lfs \n", elapsed(begin, end));
+    printf("GPU Elapsed for Haar: %lfs \n", elapsed(begin, end));
 
     cudaFree(d_src);
     cudaFree(d_dst);

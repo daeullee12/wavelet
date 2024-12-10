@@ -220,14 +220,22 @@ void process_image(unsigned char* img, unsigned char* haar_output_img, unsigned 
         // Apply the wavelet transformations
         if (mode == "gpu") {
             std::cout << "Running GPU wavelet transformations" << std::endl;
+
+
             run_daubechies4_wavelet_gpu(daubechies_channel_img, width, height, daubechies_levels);
-            run_haar_wavelet_gpu(channel_img, width, height, haar_levels);
+
             cudaError_t cuda_status = cudaGetLastError();
             if (cuda_status != cudaSuccess) {
                 std::cerr << "CUDA Daubechies wavelet failed: " << cudaGetErrorString(cuda_status) << std::endl;
-            } else {
-                std::cout << "CUDA Daubechies wavelet succeeded" << std::endl;
             }
+
+            run_haar_wavelet_gpu(channel_img, width, height, haar_levels);
+
+            cuda_status = cudaGetLastError();
+            if (cuda_status != cudaSuccess) {
+                std::cerr << "CUDA HAAR wavelet failed: " << cudaGetErrorString(cuda_status) << std::endl;
+            }
+
         } else if (mode == "cpu") {
             std::cout << "Running CPU wavelet transformations" << std::endl;
             run_haar_wavelet_cpu(channel_img, width, height, haar_levels);
@@ -264,9 +272,9 @@ void process_image(unsigned char* img, unsigned char* haar_output_img, unsigned 
 }
 
 int main(int argc, char** argv) {
-    // the argument is the image file, kernel size, mode (cpu or gpu), haar levels, and daubechies levels
-    if (argc != 6) {
-        std::cerr << "Usage: " << argv[0] << " <image file> <kernel size(cpu)> <mode (cpu|gpu)> <haar levels> <daubechies levels>" << std::endl;
+    // the argument is the image file, mode (cpu or gpu), haar levels, and daubechies levels
+    if (argc != 5) {
+        std::cerr << "Usage: " << argv[0] << " <image file> <mode (cpu|gpu)> <haar levels> <daubechies levels>" << std::endl;
         return 1;
     }
 
@@ -287,16 +295,10 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    int kernel_size = std::stoi(argv[2]);
-    if (!check_power_two(kernel_size)) {
-        std::cerr << "Error: Kernel size must be a power of two." << std::endl;
-        stbi_image_free(img);
-        return 1;
-    }
 
-    std::string mode = argv[3];
-    int haar_levels = std::stoi(argv[4]);
-    int daubechies_levels = std::stoi(argv[5]);
+    std::string mode = argv[2];
+    int haar_levels = std::stoi(argv[3]);
+    int daubechies_levels = std::stoi(argv[4]);
 
     // Resize image to the nearest power of two dimensions
     int new_width = 1 << static_cast<int>(ceil(log2(width)));
