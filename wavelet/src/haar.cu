@@ -1,8 +1,10 @@
 #include <cuda_runtime.h>
-#include "../src/cuda_ptr.h"
+// #include "../src/cuda_ptr.h"
 #include "utils.h"
-
+#include "error.h"
 #include <iostream>
+// #include <studio.h>
+
 
 // 1.0/ sqrt(2)
 #define haar 0.5f
@@ -81,6 +83,50 @@ void float_to_mat(float *in, unsigned char* out, int width, int height)
             out[i * width + j] = static_cast<unsigned char>(fabs(in[i * width + j]));
         }
     }
+}
+
+//define the haar wavelet transform
+void run_haar_wavelet_gpu(float *channel_img, int width, int height, int haar_level);
+{
+    int N = width * height;
+    assert(check_power_two(N));
+
+    size_t size = N * sizeof(float);
+    float *d_src, *d_dst;
+    int n = N;
+
+    int threadsPerBlock = 16;
+    int blocksPerGrid = (n + threadsPerBlock - 1) / threadsPerBlock;
+
+    HANDLE_ERROR(cudaMalloc((void**)&d_src, size));
+    HANDLE_ERROR(cudaMalloc((void**)&d_dst, size));
+
+    HANDLE_ERROR(cudaMemcpy(d_src, channel_img, size, cudaMemcpyHostToDevice));
+
+    clock_t begin, end;
+    begin = clock();
+
+    dim3 threads(threadsPerBlock, threadsPerBlock);
+    dim3 blocks(blocksPerGrid, blocksPerGrid);
+
+    for (int level = 0; level < haar_level; ++level)
+    {
+        blocksPerGrid = (n + threadsPerBlock - 1) / threadsPerBlock; // Update blocksPerGrid for each level
+        gpu_haar_horizontal<<<blocks, threads>>>(d_src, n, d_dst, width);
+        gpu_low_pass<<<blocks, threads>>>(d_dst, n);
+        gpu_haar_vertical<<<blocks, threads>>>(d_dst, n, d_src, width);
+        gpu_low_pass<<<blocks, threads>>>(d_src, n);
+        n = n >> 1;
+    }
+
+    cudaDeviceSynchronize();
+    end = clock();
+    HANDLE_ERROR(cudaMemcpy(channel_img, d_src, size, cudaMemcpyDeviceToHost));
+
+    printf("GPU Elapsed: %lfs \n", elapsed(begin, end));
+
+    cudaFree(d_src);
+    cudaFree(d_dst);
 }
 
 

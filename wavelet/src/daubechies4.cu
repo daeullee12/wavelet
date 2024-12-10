@@ -54,35 +54,55 @@ void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int 
 
     size_t size = N * sizeof(float);
     float *d_src, *d_dst;
-    int n = N;
+    // int n = N;
 
-    int threadsPerBlock = 512;
-    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+    dim3 threadsPerBlock(16,16);
+    dim3 blocks_per_grid((width / 2 + 15) / 16, (height + 15) / 16);
 
     HANDLE_ERROR(cudaMalloc((void**)&d_src, size));
     HANDLE_ERROR(cudaMalloc((void**)&d_dst, size));
 
     HANDLE_ERROR(cudaMemcpy(d_src, channel_img, size, cudaMemcpyHostToDevice));
 
-    clock_t begin, end;
+    // Apply the Daubechies wavelet transformation to rows
 
-    begin = clock();
-    for (int level = 0; level < levels; ++level)
-    {
-        gpu_dwt_pass<<<blocksPerGrid, threadsPerBlock>>>(d_src, d_dst, n);
-        cudaError_t cuda_status = cudaGetLastError();
-        if (cuda_status != cudaSuccess) {
-            std::cerr << "CUDA kernel launch failed: " << cudaGetErrorString(cuda_status) << std::endl;
-            return;
-        }
-        HANDLE_ERROR(cudaMemcpy(d_src, d_dst, n * sizeof(float), cudaMemcpyDeviceToDevice));
-        n = n >> 1;
+    gpu_dwt_pass<<<blocks_per_grid, threadsPerBlock>>>(d_dst, d_src, width);
+    cudaError_t cuda_status = cudaGetLastError();
+    if (cuda_status != cudaSuccess) {
+        std::cerr << "CUDA kernel launch failed: " << cudaGetErrorString(cuda_status) << std::endl;
+        return;
     }
-    cudaDeviceSynchronize();
-    end = clock();
-    HANDLE_ERROR(cudaMemcpy(channel_img, d_src, size, cudaMemcpyDeviceToHost));
+    else
+    {
+        std::cout << "CUDA kernel launch success" << std::endl;
+    }
 
-    printf("GPU Elapsed: %lfs \n", elapsed(begin, end));
+    cudaDeviceSynchronize();
+
+    //
+
+    // Apply the Daubechies wavelet transformation to columns
+    gpu_dwt_pass<<<blocks_per_grid, threadsPerBlock>>>(d_dst, d_src, height);
+    cuda_status = cudaGetLastError();
+    if (cuda_status != cudaSuccess) {
+        std::cerr << "CUDA kernel launch failed: " << cudaGetErrorString(cuda_status) << std::endl;
+        return;
+    }
+    else
+    {
+        std::cout << "CUDA kernel launch success" << std::endl;
+    }
+
+
+    cudaDeviceSynchronize();
+    // end = clock();
+    
+    // copy image to the host
+    HANDLE_ERROR(cudaMemcpy(channel_img, d_dst, size, cudaMemcpyDeviceToHost));
+    
+    // HANDLE_ERROR(cudaMemcpy(channel_img, d_dst, size, cudaMemcpyDeviceToHost));
+
+    // printf("GPU Elapsed: %lfs \n", elapsed(begin, end));
 
     cudaFree(d_src);
     cudaFree(d_dst);
