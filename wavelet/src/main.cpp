@@ -224,7 +224,7 @@ void process_image(unsigned char* img, unsigned char* haar_output_img, unsigned 
             //     std::cerr << "CUDA Haar wavelet failed: " << cudaGetErrorString(cuda_status) << std::endl;
             // }
             cudaError_t cuda_status;
-            run_daubechies4_wavelet_gpu(channel_img, width, height, width);
+            run_daubechies4_wavelet_gpu(channel_img, width, height, daubechies_levels);
             cuda_status = cudaGetLastError();
             if (cuda_status != cudaSuccess) {
                 std::cerr << "CUDA Daubechies wavelet failed: " << cudaGetErrorString(cuda_status) << std::endl;
@@ -328,6 +328,10 @@ int main(int argc, char** argv) {
 
     stbi_write_png(haar_output_filename.c_str(), new_width, new_height, channels, haar_output_img, new_width * channels);
     stbi_write_png(daubechies_output_filename.c_str(), new_width, new_height, channels, daubechies_output_img, new_width * channels);
+
+    // show output image size
+    std::cout << "Output image size: " << new_width << "x" << new_height << std::endl;
+
 
     delete[] resized_img;
     delete[] haar_output_img;

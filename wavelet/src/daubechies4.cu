@@ -36,74 +36,76 @@ __global__ void gpu_dwt_pass(float *src, float *dest, int n)
     int half = n >> 1;
 
     if (i < half) {
+
+        float low_sum = 0.0f;
+        float high_sum = 0.0f;
+
         if (2 * i < (n - 3)) {
-            dest[i] = src[2 * i] * h[0] + src[2 * i + 1] * h[1] + src[2 * i + 2] * h[2] + src[2 * i + 3] * h[3];
-            dest[i + half] = src[2 * i] * g[0] + src[2 * i + 1] * g[1] + src[2 * i + 2] * g[2] + src[2 * i + 3] * g[3];
+            low_sum = src[2 * i] * h[0] + src[2 * i + 1] * h[1] + src[2 * i + 2] * h[2] + src[2 * i + 3] * h[3];
+            high_sum = src[2 * i] * g[0] + src[2 * i + 1] * g[1] + src[2 * i + 2] * g[2] + src[2 * i + 3] * g[3];
         }
         if (2 * i == (n - 2)) {
-            dest[i] = src[n - 2] * h[0] + src[n - 1] * h[1] + src[0] * h[2] + src[1] * h[3];
-            dest[i + half] = src[n - 2] * g[0] + src[n - 1] * g[1] + src[0] * g[2] + src[1] * g[3];
+            low_sum = src[n - 2] * h[0] + src[n - 1] * h[1] + src[0] * h[2] + src[1] * h[3];
+            high_sum = src[n - 2] * g[0] + src[n - 1] * g[1] + src[0] * g[2] + src[1] * g[3];
         }
+
+        dest[i] = low_sum;
+        dest[i + half] = high_sum;
     }
 }
 
-void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int levels)
-{
+// Function to perform multi-level wavelet transform
+void multi_level_wavelet(float *d_src, float *d_temp, int n, int levels) {
+    for (int level = 0; level < levels; ++level) {
+        
+        int curr_n = n >> level; // Array size reduces by half for each level
+        int threads_per_block;
+        
+        cudaDeviceProp prop;
+        cudaGetDeviceProperties(&prop, 0);
+        
+        threads_per_block = min(prop.maxThreadsPerBlock, curr_n / 2);
+        int blocks_per_grid = (curr_n / 2 + threads_per_block - 1) / threads_per_block;
+
+        // Call the kernel for the current level
+        gpu_dwt_pass<<<blocks_per_grid, threads_per_block>>>(d_src, d_temp, curr_n);
+        cudaDeviceSynchronize();
+
+        // Swap source and destination pointers for next level
+        cudaMemcpy(d_src, d_temp, curr_n * sizeof(float), cudaMemcpyDeviceToDevice);
+    }
+}
+
+void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int levels) {
     int N = width * height;
     assert(check_power_two(N));
 
     size_t size = N * sizeof(float);
-    float *d_src, *d_dst;
-    // int n = N;
-
-    dim3 threadsPerBlock(16,16);
-    dim3 blocks_per_grid((width / 2 + 15) / 16, (height + 15) / 16);
+    float *d_src, *d_temp;
+    int n = N;
 
     HANDLE_ERROR(cudaMalloc((void**)&d_src, size));
-    HANDLE_ERROR(cudaMalloc((void**)&d_dst, size));
+    HANDLE_ERROR(cudaMalloc((void**)&d_temp, size));
 
     HANDLE_ERROR(cudaMemcpy(d_src, channel_img, size, cudaMemcpyHostToDevice));
 
-    // Apply the Daubechies wavelet transformation to rows
+    clock_t begin, end;
+    begin = clock();
 
-    gpu_dwt_pass<<<blocks_per_grid, threadsPerBlock>>>(d_dst, d_src, width);
-    cudaError_t cuda_status = cudaGetLastError();
-    if (cuda_status != cudaSuccess) {
-        std::cerr << "CUDA kernel launch failed: " << cudaGetErrorString(cuda_status) << std::endl;
-        return;
-    }
-    else
-    {
-        std::cout << "CUDA kernel launch success" << std::endl;
-    }
+    // Debugging: Print initial values
+    printf("n: %d, levels: %d\n", n, levels);
 
-    cudaDeviceSynchronize();
-
-    //
-
-    // Apply the Daubechies wavelet transformation to columns
-    gpu_dwt_pass<<<blocks_per_grid, threadsPerBlock>>>(d_dst, d_src, height);
-    cuda_status = cudaGetLastError();
-    if (cuda_status != cudaSuccess) {
-        std::cerr << "CUDA kernel launch failed: " << cudaGetErrorString(cuda_status) << std::endl;
-        return;
-    }
-    else
-    {
-        std::cout << "CUDA kernel launch success" << std::endl;
-    }
+    // Perform multi-level wavelet transform
+    multi_level_wavelet(d_src, d_temp, n, levels);
 
 
-    cudaDeviceSynchronize();
-    // end = clock();
-    
-    // copy image to the host
-    HANDLE_ERROR(cudaMemcpy(channel_img, d_dst, size, cudaMemcpyDeviceToHost));
-    
-    // HANDLE_ERROR(cudaMemcpy(channel_img, d_dst, size, cudaMemcpyDeviceToHost));
+    end = clock();
+    printf("Time taken for wavelet transform: %f\n", elapsed(begin, end));
 
-    // printf("GPU Elapsed: %lfs \n", elapsed(begin, end));
+    // Copy the result back to host
+    HANDLE_ERROR(cudaMemcpy(channel_img, d_src, size, cudaMemcpyDeviceToHost));
 
-    cudaFree(d_src);
-    cudaFree(d_dst);
+    // Free device memory
+    HANDLE_ERROR(cudaFree(d_src));
+    HANDLE_ERROR(cudaFree(d_temp));
 }
