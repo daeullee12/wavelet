@@ -13,10 +13,11 @@
     We call this kernel log_2(N) times (assuming N is power of 2) */
 
 // Define device constants
-__constant__ double g[4];
-__constant__ double h[4];
-__constant__ double ig[4];
-__constant__ double ih[4];
+
+// Define Daubechies 4 coefficients
+__constant__ float db4_low[4] = {0.4829629131445341, 0.8365163037378077, 0.2241438680420134, -0.1294095225512603};
+__constant__ float db4_high[4] = {-0.1294095225512603, -0.2241438680420134, 0.8365163037378077, -0.4829629131445341};
+
 
 // __host__ __device__
 inline double elapsed(clock_t start, clock_t end)
@@ -30,82 +31,150 @@ inline bool check_power_two(int x)
 }
 
 
-__global__ void gpu_dwt_pass(float *src, float *dest, int n)
-{
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    int half = n >> 1;
 
-    if (i < half) {
+// CUDA Kernel to process rows
+__global__ void wavelet_transform_rows(const float* input, float* low_output, float* high_output, int width, int height) {
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
 
+    if (row < height && col < width / 2) {
         float low_sum = 0.0f;
         float high_sum = 0.0f;
 
-        if (2 * i < (n - 3)) {
-            low_sum = src[2 * i] * h[0] + src[2 * i + 1] * h[1] + src[2 * i + 2] * h[2] + src[2 * i + 3] * h[3];
-            high_sum = src[2 * i] * g[0] + src[2 * i + 1] * g[1] + src[2 * i + 2] * g[2] + src[2 * i + 3] * g[3];
-        }
-        if (2 * i == (n - 2)) {
-            low_sum = src[n - 2] * h[0] + src[n - 1] * h[1] + src[0] * h[2] + src[1] * h[3];
-            high_sum = src[n - 2] * g[0] + src[n - 1] * g[1] + src[0] * g[2] + src[1] * g[3];
+        // Apply wavelet transform to the row
+        for (int k = 0; k < 4; ++k) {
+            int idx = (2 * col + k) % width;
+            low_sum += input[row * width + idx] * db4_low[k];
+            high_sum += input[row * width + idx] * db4_high[k];
         }
 
-        dest[i] = low_sum;
-        dest[i + half] = high_sum;
+        // Store results
+        low_output[row * (width / 2) + col] = low_sum;
+        high_output[row * (width / 2) + col] = high_sum;
     }
 }
 
-// Function to perform multi-level wavelet transform
-void multi_level_wavelet(float *d_src, float *d_temp, int n, int levels) {
-    for (int level = 0; level < levels; ++level) {
-        
-        int curr_n = n >> level; // Array size reduces by half for each level
-        int threads_per_block;
-        
-        cudaDeviceProp prop;
-        cudaGetDeviceProperties(&prop, 0);
-        
-        threads_per_block = min(prop.maxThreadsPerBlock, curr_n / 2);
-        int blocks_per_grid = (curr_n / 2 + threads_per_block - 1) / threads_per_block;
+// CUDA Kernel to process columns
+__global__ void wavelet_transform_columns(const float* input, float* low_output, float* high_output, int width, int height) {
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
 
-        // Call the kernel for the current level
-        gpu_dwt_pass<<<blocks_per_grid, threads_per_block>>>(d_src, d_temp, curr_n);
-        cudaDeviceSynchronize();
+    if (col < width && row < height / 2) {
+        float low_sum = 0.0f;
+        float high_sum = 0.0f;
 
-        // Swap source and destination pointers for next level
-        cudaMemcpy(d_src, d_temp, curr_n * sizeof(float), cudaMemcpyDeviceToDevice);
+        // Apply wavelet transform to the column
+        for (int k = 0; k < 4; ++k) {
+            int idx = (2 * row + k) % height;
+            low_sum += input[idx * width + col] * db4_low[k];
+            high_sum += input[idx * width + col] * db4_high[k];
+        }
+
+        // Store results
+        low_output[row * width + col] = low_sum;
+        high_output[row * width + col] = high_sum;
     }
 }
+
+// // Function to perform multi-level wavelet transform
+// void multi_level_wavelet_transform(float* d_image, int width, int height, int levels) {
+//     float *d_temp_low, *d_temp_high, *d_LL, *d_LH, *d_HL, *d_HH;
+
+//     for (int level = 0; level < levels; ++level) {
+//         int curr_width = width >> level;   // Divide by 2 for each level
+//         int curr_height = height >> level;
+
+
+//         HANDLE_ERROR(cudaMalloc((void**)&d_temp_low, curr_width * curr_height * sizeof(float) / 2));
+//         HANDLE_ERROR(cudaMalloc((void**)&d_temp_high, curr_width * curr_height * sizeof(float) / 2));
+//         HANDLE_ERROR(cudaMalloc((void**)&d_LL, (curr_width / 2) * (curr_height / 2) * sizeof(float)));
+//         HANDLE_ERROR(cudaMalloc((void**)&d_LH, (curr_width / 2) * (curr_height / 2) * sizeof(float)));
+//         HANDLE_ERROR(cudaMalloc((void**)&d_HL, (curr_width / 2) * (curr_height / 2) * sizeof(float)));
+//         HANDLE_ERROR(cudaMalloc((void**)&d_HH, (curr_width / 2) * (curr_height / 2) * sizeof(float)));
+
+//         // Grid and block sizes
+//         dim3 threads_per_block(16, 16);
+//         dim3 blocks_per_grid((curr_width / 2 + 15) / 16, (curr_height + 15) / 16);
+
+//         // Apply wavelet transform to rows
+//         wavelet_transform_rows<<<blocks_per_grid, threads_per_block>>>(
+//             d_image, d_temp_low, d_temp_high, curr_width, curr_height
+//         );
+//         cudaDeviceSynchronize();
+
+//         // Apply wavelet transform to columns
+//         dim3 blocks_per_grid_cols((curr_width / 2 + 15) / 16, (curr_height / 2 + 15) / 16);
+//         wavelet_transform_columns<<<blocks_per_grid_cols, threads_per_block>>>(
+//             d_temp_low, d_LL, d_LH, curr_width / 2, curr_height
+//         );
+//         cudaDeviceSynchronize();
+//         wavelet_transform_columns<<<blocks_per_grid_cols, threads_per_block>>>(
+//             d_temp_high, d_HL, d_HH, curr_width / 2, curr_height
+//         );
+//         cudaDeviceSynchronize();
+
+//         // Copy LL subband back to `d_image` for the next level
+
+
+//         cudaMemcpy(d_image, d_LL, (curr_width / 2) * (curr_height / 2) * sizeof(float), cudaMemcpyDeviceToDevice);
+//         cudaMemcpy(d_image + (curr_width / 2) * (curr_height / 2), d_LH, (curr_width / 2) * (curr_height / 2) * sizeof(float), cudaMemcpyDeviceToDevice);
+//         cudaMemcpy(d_image + (curr_width / 2) * curr_height, d_HL, (curr_width / 2) * (curr_height / 2) * sizeof(float), cudaMemcpyDeviceToDevice);
+//         cudaMemcpy(d_image + (curr_width / 2) * curr_height + (curr_width / 2) * (curr_height / 2), d_HH, (curr_width / 2) * (curr_height / 2) * sizeof(float), cudaMemcpyDeviceToDevice);
+
+//         // Free intermediate memory
+//         cudaFree(d_temp_low);
+//         cudaFree(d_temp_high);
+//         cudaFree(d_LL);
+//         cudaFree(d_LH);
+//         cudaFree(d_HL);
+//         cudaFree(d_HH);
+//     }
+// }
+
 
 void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int levels) {
-    int N = width * height;
-    assert(check_power_two(N));
+        // Allocate device memory
+    float *d_image, *d_temp_low, *d_temp_high, *d_LL, *d_LH, *d_HL, *d_HH;
+    cudaMalloc(&d_image, width * height * sizeof(float));
+    cudaMalloc(&d_temp_low, width * height * sizeof(float) / 2);
+    cudaMalloc(&d_temp_high, width * height * sizeof(float) / 2);
+    cudaMalloc(&d_LL, (width / 2) * (height / 2) * sizeof(float));
+    cudaMalloc(&d_LH, (width / 2) * (height / 2) * sizeof(float));
+    cudaMalloc(&d_HL, (width / 2) * (height / 2) * sizeof(float));
+    cudaMalloc(&d_HH, (width / 2) * (height / 2) * sizeof(float));
 
-    size_t size = N * sizeof(float);
-    float *d_src, *d_temp;
-    int n = N;
+    // Copy image to device
+    cudaMemcpy(d_image, channel_img, width * height * sizeof(float), cudaMemcpyHostToDevice);
 
-    HANDLE_ERROR(cudaMalloc((void**)&d_src, size));
-    HANDLE_ERROR(cudaMalloc((void**)&d_temp, size));
+    // Define CUDA grid and block dimensions
+    dim3 threads_per_block(16, 16);
+    dim3 blocks_per_grid((width / 2 + 15) / 16, (height + 15) / 16);
 
-    HANDLE_ERROR(cudaMemcpy(d_src, channel_img, size, cudaMemcpyHostToDevice));
+    // Transform rows
+    wavelet_transform_rows<<<blocks_per_grid, threads_per_block>>>(d_image, d_temp_low, d_temp_high, width, height);
 
-    clock_t begin, end;
-    begin = clock();
+    // Transform columns
+    dim3 blocks_per_grid_cols((width + 15) / 16, (height / 2 + 15) / 16);
+    wavelet_transform_columns<<<blocks_per_grid_cols, threads_per_block>>>(
+        d_temp_low, d_LL, d_LH, width / 2, height
+    );
+    wavelet_transform_columns<<<blocks_per_grid_cols, threads_per_block>>>(
+        d_temp_high, d_HL, d_HH, width / 2, height
+    );
 
-    // Debugging: Print initial values
-    printf("n: %d, levels: %d\n", n, levels);
+    // Retrieve results
 
-    // Perform multi-level wavelet transform
-    multi_level_wavelet(d_src, d_temp, n, levels);
-
-
-    end = clock();
-    printf("Time taken for wavelet transform: %f\n", elapsed(begin, end));
-
-    // Copy the result back to host
-    HANDLE_ERROR(cudaMemcpy(channel_img, d_src, size, cudaMemcpyDeviceToHost));
+    cudaMemcpy(channel_img, d_LL, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(channel_img + (width / 2) * (height / 2), d_LH, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(channel_img + (width / 2) * height, d_HL, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(channel_img + (width / 2) * height + (width / 2) * (height / 2), d_HH, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
 
     // Free device memory
-    HANDLE_ERROR(cudaFree(d_src));
-    HANDLE_ERROR(cudaFree(d_temp));
+    cudaFree(d_image);
+    cudaFree(d_temp_low);
+    cudaFree(d_temp_high);
+    cudaFree(d_LL);
+    cudaFree(d_LH);
+    cudaFree(d_HL);
+    cudaFree(d_HH);
 }
