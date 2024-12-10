@@ -1,0 +1,1 @@
+-I/home/dlee50/wavelet/build -I/home/dlee50/wavelet -isystem "/usr/local/cuda-12.3/targets/x86_64-linux/include" -isystem "/home/dlee50/vcpkg/installed/x64-linux/include"
