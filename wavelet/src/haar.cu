@@ -100,6 +100,10 @@ __global__ void gpu_low_pass(T* x, const int n)
 //define the haar wavelet transform
 void run_haar_wavelet_gpu(float *channel_img, int width, int height, int haar_level)
 {
+    // check if the level is smaller than the maximum possible
+    assert(haar_level <= int(log2(width)));
+    if (haar_level == 0) return;
+
     int N = width * height;
     assert(check_power_two(width) && check_power_two(height));
 
@@ -127,6 +131,35 @@ void run_haar_wavelet_gpu(float *channel_img, int width, int height, int haar_le
     cudaDeviceSynchronize();
     end = clock();
     HANDLE_ERROR(cudaMemcpy(channel_img, d_src, size, cudaMemcpyDeviceToHost));
+
+
+    // if levels > 1, recursively apply the wavelet transform
+    if (haar_level > 1) {
+        // Recursively apply the wavelet transform
+        
+        // Allocate buffers for the current level
+        float *LL = new float[(width / 2) * (height / 2)];
+
+        // take the left top corner of the image from channel image
+        for (int i = 0; i < height / 2; ++i) {
+            for (int j = 0; j < width / 2; ++j) {
+                LL[i * (width / 2) + j] = channel_img[i * width + j];
+            }
+        }
+
+        run_haar_wavelet_gpu(LL, width / 2, height / 2, haar_level - 1);
+
+        // Copy the low-frequency coefficients back to channel_img
+        for (int i = 0; i < height / 2; ++i) {
+            for (int j = 0; j < width / 2; ++j) {
+                channel_img[i * width + j] = LL[i * (width / 2) + j];
+            }
+        }
+
+        delete[] LL;
+
+    }
+
 
     printf("GPU Elapsed: %lfs \n", elapsed(begin, end));
 

@@ -77,6 +77,13 @@ __global__ void wavelet_transform_columns(const float* input, float* low_output,
 }
 
 void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int levels) {
+
+    // check if the level is smaller than the maximum possible
+    assert(levels <= int(log2(width)));
+    if (levels == 0) return;
+
+
+
     // Allocate device memory
     float *d_image;
     cudaMalloc(&d_image, width * height * sizeof(float));
@@ -96,6 +103,9 @@ void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int 
     // Define CUDA grid and block dimensions
     dim3 threads_per_block(16, 16);
     dim3 blocks_per_grid((width / 2 + 15) / 16, (height + 15) / 16);
+
+    clock_t begin, end;
+    begin = clock();
 
     // Transform rows
     wavelet_transform_rows<<<blocks_per_grid, threads_per_block>>>(d_image, d_temp_low, d_temp_high, width, height);
@@ -148,7 +158,13 @@ void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int 
             }
         }
 
+        delete[] LL;
+
     }
+
+    end = clock();
+
+    printf("GPU Elapsed for Daubechies: %lfs \n", elapsed(begin, end));
     
     // Free device memory
     cudaFree(d_image);
