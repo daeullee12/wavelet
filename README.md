@@ -36,7 +36,7 @@ If you prefer not to use CMake, you can directly compile the source files with y
 Run the program using the following format:
 
 ```
-./wavelet <image file> <kernel size> <mode> <haar levels> <daubechies levels>
+./wavelet <image file> <mode> <haar levels> <daubechies levels>
 ```
 
 ### Arguments
