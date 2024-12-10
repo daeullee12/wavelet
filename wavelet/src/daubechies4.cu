@@ -128,9 +128,28 @@ void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int 
     cudaMemcpy2D(d_image + (height / 2) * width + (width / 2), width * sizeof(float), d_HH, 
                 (width / 2) * sizeof(float), (width / 2) * sizeof(float), height / 2, cudaMemcpyDeviceToDevice);
 
+
     // Copy concatenated result back to host
     cudaMemcpy(channel_img, d_image, width * height * sizeof(float), cudaMemcpyDeviceToHost);
 
+    
+    // if levels > 1, recursively apply the wavelet transform
+    if (levels > 1) {
+        // take the LL subband as the new image d_LL to LL
+
+        float *LL = new float[(width / 2) * (height / 2)];
+        cudaMemcpy(LL, d_LL, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
+
+        run_daubechies4_wavelet_gpu(LL, width / 2, height / 2, levels - 1);
+
+        for (int i = 0; i < height / 2; ++i) {
+            for (int j = 0; j < width / 2; ++j) {
+                channel_img[i * width + j] = LL[i * (width / 2) + j];
+            }
+        }
+
+    }
+    
     // Free device memory
     cudaFree(d_image);
     cudaFree(d_temp_low);
