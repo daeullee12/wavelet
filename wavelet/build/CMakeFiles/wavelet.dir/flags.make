@@ -11,7 +11,7 @@ CUDA_FLAGS = -std=c++20 "--generate-code=arch=compute_52,code=[compute_52,sm_52]
 
 CXX_DEFINES = -DBOOST_CONTAINER_NO_LIB -DBOOST_CONTAINER_STATIC_LINK -DBOOST_PROGRAM_OPTIONS_NO_LIB -DBOOST_PROGRAM_OPTIONS_STATIC_LINK
 
-CXX_INCLUDES = -I/home/dlee50/wavelet/build -I/home/dlee50/wavelet -isystem /usr/local/cuda-12.3/targets/x86_64-linux/include -isystem /home/dlee50/vcpkg/installed/x64-linux/include
+CXX_INCLUDES = -I/home/dlee50/git/wavelet/wavelet/build -I/home/dlee50/git/wavelet/wavelet -isystem /usr/local/cuda-12.3/targets/x86_64-linux/include -isystem /home/dlee50/vcpkg/installed/x64-linux/include
 
 CXX_FLAGS = -std=gnu++20
 

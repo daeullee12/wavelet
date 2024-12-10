@@ -53,10 +53,10 @@ RM = /snap/cmake/1433/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/dlee50/wavelet
+CMAKE_SOURCE_DIR = /home/dlee50/git/wavelet/wavelet
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/dlee50/wavelet/build
+CMAKE_BINARY_DIR = /home/dlee50/git/wavelet/wavelet/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/wavelet.dir/depend.make
@@ -74,10 +74,10 @@ CMakeFiles/wavelet.dir/codegen:
 
 CMakeFiles/wavelet.dir/src/daubechies4.cu.o: CMakeFiles/wavelet.dir/flags.make
 CMakeFiles/wavelet.dir/src/daubechies4.cu.o: CMakeFiles/wavelet.dir/includes_CUDA.rsp
-CMakeFiles/wavelet.dir/src/daubechies4.cu.o: /home/dlee50/wavelet/src/daubechies4.cu
+CMakeFiles/wavelet.dir/src/daubechies4.cu.o: /home/dlee50/git/wavelet/wavelet/src/daubechies4.cu
 CMakeFiles/wavelet.dir/src/daubechies4.cu.o: CMakeFiles/wavelet.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/dlee50/wavelet/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CUDA object CMakeFiles/wavelet.dir/src/daubechies4.cu.o"
-	/usr/local/cuda-12.3/bin/nvcc -forward-unknown-to-host-compiler $(CUDA_DEFINES) $(CUDA_INCLUDES) $(CUDA_FLAGS) -MD -MT CMakeFiles/wavelet.dir/src/daubechies4.cu.o -MF CMakeFiles/wavelet.dir/src/daubechies4.cu.o.d -x cu -rdc=true -c /home/dlee50/wavelet/src/daubechies4.cu -o CMakeFiles/wavelet.dir/src/daubechies4.cu.o
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/dlee50/git/wavelet/wavelet/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CUDA object CMakeFiles/wavelet.dir/src/daubechies4.cu.o"
+	/usr/local/cuda-12.3/bin/nvcc -forward-unknown-to-host-compiler $(CUDA_DEFINES) $(CUDA_INCLUDES) $(CUDA_FLAGS) -MD -MT CMakeFiles/wavelet.dir/src/daubechies4.cu.o -MF CMakeFiles/wavelet.dir/src/daubechies4.cu.o.d -x cu -rdc=true -c /home/dlee50/git/wavelet/wavelet/src/daubechies4.cu -o CMakeFiles/wavelet.dir/src/daubechies4.cu.o
 
 CMakeFiles/wavelet.dir/src/daubechies4.cu.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CUDA source to CMakeFiles/wavelet.dir/src/daubechies4.cu.i"
@@ -88,18 +88,18 @@ CMakeFiles/wavelet.dir/src/daubechies4.cu.s: cmake_force
 	$(CMAKE_COMMAND) -E cmake_unimplemented_variable CMAKE_CUDA_CREATE_ASSEMBLY_SOURCE
 
 CMakeFiles/wavelet.dir/src/main.cpp.o: CMakeFiles/wavelet.dir/flags.make
-CMakeFiles/wavelet.dir/src/main.cpp.o: /home/dlee50/wavelet/src/main.cpp
+CMakeFiles/wavelet.dir/src/main.cpp.o: /home/dlee50/git/wavelet/wavelet/src/main.cpp
 CMakeFiles/wavelet.dir/src/main.cpp.o: CMakeFiles/wavelet.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/dlee50/wavelet/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/wavelet.dir/src/main.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/wavelet.dir/src/main.cpp.o -MF CMakeFiles/wavelet.dir/src/main.cpp.o.d -o CMakeFiles/wavelet.dir/src/main.cpp.o -c /home/dlee50/wavelet/src/main.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/dlee50/git/wavelet/wavelet/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/wavelet.dir/src/main.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/wavelet.dir/src/main.cpp.o -MF CMakeFiles/wavelet.dir/src/main.cpp.o.d -o CMakeFiles/wavelet.dir/src/main.cpp.o -c /home/dlee50/git/wavelet/wavelet/src/main.cpp
 
 CMakeFiles/wavelet.dir/src/main.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/wavelet.dir/src/main.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/dlee50/wavelet/src/main.cpp > CMakeFiles/wavelet.dir/src/main.cpp.i
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/dlee50/git/wavelet/wavelet/src/main.cpp > CMakeFiles/wavelet.dir/src/main.cpp.i
 
 CMakeFiles/wavelet.dir/src/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/wavelet.dir/src/main.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/dlee50/wavelet/src/main.cpp -o CMakeFiles/wavelet.dir/src/main.cpp.s
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/dlee50/git/wavelet/wavelet/src/main.cpp -o CMakeFiles/wavelet.dir/src/main.cpp.s
 
 # Object files for target wavelet
 wavelet_OBJECTS = \
@@ -124,7 +124,7 @@ CMakeFiles/wavelet.dir/cmake_device_link.o: /usr/lib/x86_64-linux-gnu/librt.a
 CMakeFiles/wavelet.dir/cmake_device_link.o: CMakeFiles/wavelet.dir/deviceLinkLibs.rsp
 CMakeFiles/wavelet.dir/cmake_device_link.o: CMakeFiles/wavelet.dir/deviceObjects1.rsp
 CMakeFiles/wavelet.dir/cmake_device_link.o: CMakeFiles/wavelet.dir/dlink.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/dlee50/wavelet/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CUDA device code CMakeFiles/wavelet.dir/cmake_device_link.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/dlee50/git/wavelet/wavelet/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CUDA device code CMakeFiles/wavelet.dir/cmake_device_link.o"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/wavelet.dir/dlink.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -153,7 +153,7 @@ wavelet: /home/dlee50/vcpkg/installed/x64-linux/debug/lib/libboost_container.a
 wavelet: /usr/lib/x86_64-linux-gnu/librt.a
 wavelet: CMakeFiles/wavelet.dir/cmake_device_link.o
 wavelet: CMakeFiles/wavelet.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/dlee50/wavelet/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX executable wavelet"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/dlee50/git/wavelet/wavelet/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX executable wavelet"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/wavelet.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -165,6 +165,6 @@ CMakeFiles/wavelet.dir/clean:
 .PHONY : CMakeFiles/wavelet.dir/clean
 
 CMakeFiles/wavelet.dir/depend:
-	cd /home/dlee50/wavelet/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/dlee50/wavelet /home/dlee50/wavelet /home/dlee50/wavelet/build /home/dlee50/wavelet/build /home/dlee50/wavelet/build/CMakeFiles/wavelet.dir/DependInfo.cmake "--color=$(COLOR)"
+	cd /home/dlee50/git/wavelet/wavelet/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/dlee50/git/wavelet/wavelet /home/dlee50/git/wavelet/wavelet /home/dlee50/git/wavelet/wavelet/build /home/dlee50/git/wavelet/wavelet/build /home/dlee50/git/wavelet/wavelet/build/CMakeFiles/wavelet.dir/DependInfo.cmake "--color=$(COLOR)"
 .PHONY : CMakeFiles/wavelet.dir/depend
 

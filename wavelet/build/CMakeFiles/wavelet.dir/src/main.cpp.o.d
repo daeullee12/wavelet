@@ -1,5 +1,6 @@
-CMakeFiles/wavelet.dir/src/main.cpp.o: /home/dlee50/wavelet/src/main.cpp \
- /usr/include/stdc-predef.h /usr/include/c++/11/iostream \
+CMakeFiles/wavelet.dir/src/main.cpp.o: \
+ /home/dlee50/git/wavelet/wavelet/src/main.cpp /usr/include/stdc-predef.h \
+ /usr/include/c++/11/iostream \
  /usr/include/x86_64-linux-gnu/c++/11/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/os_defines.h \
  /usr/include/features.h /usr/include/features-time64.h \
@@ -203,8 +204,9 @@ CMakeFiles/wavelet.dir/src/main.cpp.o: /home/dlee50/wavelet/src/main.cpp \
  /usr/include/c++/11/bits/refwrap.h \
  /usr/include/c++/11/ext/aligned_buffer.h \
  /usr/include/c++/11/bits/fs_dir.h /usr/include/c++/11/bits/fs_ops.h \
- /home/dlee50/wavelet/src/stb_image.h /usr/include/c++/11/stdlib.h \
- /usr/include/string.h /usr/include/strings.h /usr/include/c++/11/math.h \
+ /home/dlee50/git/wavelet/wavelet/src/stb_image.h \
+ /usr/include/c++/11/stdlib.h /usr/include/string.h \
+ /usr/include/strings.h /usr/include/c++/11/math.h \
  /usr/include/c++/11/cmath /usr/include/math.h \
  /usr/include/x86_64-linux-gnu/bits/math-vector.h \
  /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h \
@@ -231,6 +233,6 @@ CMakeFiles/wavelet.dir/src/main.cpp.o: /home/dlee50/wavelet/src/main.cpp \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/xmmintrin.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/mmintrin.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/mm_malloc.h \
- /home/dlee50/wavelet/src/stb_image_write.h \
- /home/dlee50/wavelet/src/daubechies4.cuh \
- /home/dlee50/wavelet/src/utils.h
+ /home/dlee50/git/wavelet/wavelet/src/stb_image_write.h \
+ /home/dlee50/git/wavelet/wavelet/src/daubechies4.cuh \
+ /home/dlee50/git/wavelet/wavelet/src/utils.h
