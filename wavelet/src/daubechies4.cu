@@ -1,4 +1,5 @@
 #include <cuda_runtime.h>
+#include <cassert>
 #include "daubechies4.cuh"
 // #include "utils.h"
 #include "error.h"
@@ -34,17 +35,19 @@ __global__ void gpu_dwt_pass(float *src, float *dest, int n)
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int half = n >> 1;
 
-    if(2*i < (n-3)) {
-        dest[i]             = src[2*i]*h[0] + src[2*i+1]*h[1] + src[2*i+2]*h[2] + src[2*i+3]*h[3];
-        dest[i+half]        = src[2*i]*g[0] + src[2*i+1]*g[1] + src[2*i+2]*g[2] + src[2*i+3]*g[3];
-    }
-    if(2*i == (n-2)) {
-        dest[i]         = src[n-2]*h[0] + src[n-1]*h[1] + src[0]*h[2] + src[1]*h[3];
-        dest[i+half]    = src[n-2]*g[0] + src[n-1]*g[1] + src[0]*g[2] + src[1]*g[3];
+    if (i < half) {
+        if (2 * i < (n - 3)) {
+            dest[i] = src[2 * i] * h[0] + src[2 * i + 1] * h[1] + src[2 * i + 2] * h[2] + src[2 * i + 3] * h[3];
+            dest[i + half] = src[2 * i] * g[0] + src[2 * i + 1] * g[1] + src[2 * i + 2] * g[2] + src[2 * i + 3] * g[3];
+        }
+        if (2 * i == (n - 2)) {
+            dest[i] = src[n - 2] * h[0] + src[n - 1] * h[1] + src[0] * h[2] + src[1] * h[3];
+            dest[i + half] = src[n - 2] * g[0] + src[n - 1] * g[1] + src[0] * g[2] + src[1] * g[3];
+        }
     }
 }
 
-void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int stride)
+void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int levels)
 {
     int N = width * height;
     assert(check_power_two(N));
@@ -64,10 +67,14 @@ void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int 
     clock_t begin, end;
 
     begin = clock();
-    while (n >= 4)
+    for (int level = 0; level < levels; ++level)
     {
         gpu_dwt_pass<<<blocksPerGrid, threadsPerBlock>>>(d_src, d_dst, n);
-        // we need only copy the n first elements, not the whole signal
+        cudaError_t cuda_status = cudaGetLastError();
+        if (cuda_status != cudaSuccess) {
+            std::cerr << "CUDA kernel launch failed: " << cudaGetErrorString(cuda_status) << std::endl;
+            return;
+        }
         HANDLE_ERROR(cudaMemcpy(d_src, d_dst, n * sizeof(float), cudaMemcpyDeviceToDevice));
         n = n >> 1;
     }
@@ -79,5 +86,4 @@ void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int 
 
     cudaFree(d_src);
     cudaFree(d_dst);
-
 }

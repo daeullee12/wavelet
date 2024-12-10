@@ -32,6 +32,6 @@ const double _ig[4] = {
 // extern __constant__ double ig[4];
 // extern __constant__ double ih[4];
 
-void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int stride);
+void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int level);
 
 #endif
