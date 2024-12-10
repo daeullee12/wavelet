@@ -266,7 +266,7 @@ void process_image(unsigned char* img, unsigned char* haar_output_img, unsigned 
 int main(int argc, char** argv) {
     // the argument is the image file, kernel size, mode (cpu or gpu), haar levels, and daubechies levels
     if (argc != 6) {
-        std::cerr << "Usage: " << argv[0] << " <image file> <kernel size> <mode (cpu|gpu)> <haar levels> <daubechies levels>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <image file> <kernel size(cpu)> <mode (cpu|gpu)> <haar levels> <daubechies levels>" << std::endl;
         return 1;
     }
 
