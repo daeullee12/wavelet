@@ -41,19 +41,19 @@ Run the program using the following format:
 
 ### Arguments
 1. `<image file>`: Path to the input image (e.g., `image.jpg`).
-2. `<kernel size>`: Size of the kernel (must be a power of two, e.g., 256).
-3. `<mode>`: Specify execution mode:
+2. `<mode>`: Specify execution mode:
    - `cpu`: Run the program using CPU.
    - `gpu`: Run the program using GPU.
-4. `<haar levels>`: Number of levels for Haar wavelet transformation.
-5. `<daubechies levels>`: Number of levels for Daubechies wavelet transformation.
+3. `<haar levels>`: Number of levels for Haar wavelet transformation.
+4. `<daubechies levels>`: Number of levels for Daubechies wavelet transformation.
 
 ### Example Usage
-To process `image.jpg` with a kernel size of 256, using CPU mode, and applying 3 levels for both Haar and Daubechies transformations, use:
+To process `cat.jpg` using GPU mode, and applying 3 levels for both Haar and Daubechies transformations, use:
 
 ```
-./wavelet image.jpg 256 cpu 3 3
+./wavelet ../img/cat.jpg gpu 3 3
 ```
+
 
 ## Output
 
@@ -66,5 +66,6 @@ The `<base_name>` corresponds to the original file name without its extension.
 ## Notes
 
 - Ensure that the input image is in a supported format.
-- The kernel size must be a power of two for correct processing.
+- Ensure that the imput image size to be square.
+- Levels for Haar and Daubechies should be less than or equal to log2(width)
 
