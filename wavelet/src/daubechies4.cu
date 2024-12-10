@@ -78,7 +78,7 @@ __global__ void wavelet_transform_columns(const float* input, float* low_output,
 
 
 void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int levels) {
-        // Allocate device memory
+    // Allocate device memory
     float *d_image, *d_temp_low, *d_temp_high, *d_LL, *d_LH, *d_HL, *d_HH;
     cudaMalloc(&d_image, width * height * sizeof(float));
     cudaMalloc(&d_temp_low, width * height * sizeof(float) / 2);
@@ -91,50 +91,45 @@ void run_daubechies4_wavelet_gpu(float *channel_img, int width, int height, int 
     // Copy image to device
     cudaMemcpy(d_image, channel_img, width * height * sizeof(float), cudaMemcpyHostToDevice);
 
-    // Define CUDA grid and block dimensions
-    dim3 threads_per_block(16, 16);
-    dim3 blocks_per_grid((width / 2 + 15) / 16, (height + 15) / 16);
+    for (int level = 0; level < levels; ++level) {
+        int current_width = width >> level;
+        int current_height = height >> level;
 
-    // Transform rows
-    wavelet_transform_rows<<<blocks_per_grid, threads_per_block>>>(d_image, d_temp_low, d_temp_high, width, height);
-    cudaDeviceSynchronize();
-    // Transform columns
-    dim3 blocks_per_grid_cols((width + 15) / 16, (height / 2 + 15) / 16);
-    wavelet_transform_columns<<<blocks_per_grid_cols, threads_per_block>>>(
-        d_temp_low, d_LL, d_LH, width / 2, height
-    );
-    cudaDeviceSynchronize();
-    wavelet_transform_columns<<<blocks_per_grid_cols, threads_per_block>>>(
-        d_temp_high, d_HL, d_HH, width / 2, height
-    );
-    cudaDeviceSynchronize();
+        // Define CUDA grid and block dimensions
+        dim3 threads_per_block(16, 16);
+        dim3 blocks_per_grid((current_width / 2 + 15) / 16, (current_height + 15) / 16);
 
-    // Retrieve results
-    // cudaMemcpy(channel_img, d_LL, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
-    // cudaMemcpy(channel_img + (width / 2) * (height / 2), d_LH, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
-    // cudaMemcpy(channel_img + (width / 2) * (height), d_HL, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
-    // cudaMemcpy(channel_img + (width / 2) * (height / 2) * 2, d_HH, (width / 2) * (height / 2) * sizeof(float), cudaMemcpyDeviceToHost);
-    // Concatenate results back to channel_img
-    float *d_concat;
-    cudaMalloc(&d_concat, width * height * sizeof(float));
+        // Transform rows
+        wavelet_transform_rows<<<blocks_per_grid, threads_per_block>>>(d_image, d_temp_low, d_temp_high, current_width, current_height);
+        cudaDeviceSynchronize();
 
-    // Copy LL to the top-left
-    cudaMemcpy2D(d_concat, width * sizeof(float), d_LL, (width / 2) * sizeof(float), (width / 2) * sizeof(float), height / 2, cudaMemcpyDeviceToDevice);
+        // Transform columns
+        dim3 blocks_per_grid_cols((current_width + 15) / 16, (current_height / 2 + 15) / 16);
+        wavelet_transform_columns<<<blocks_per_grid_cols, threads_per_block>>>(
+            d_temp_low, d_LL, d_LH, current_width / 2, current_height
+        );
+        cudaDeviceSynchronize();
+        wavelet_transform_columns<<<blocks_per_grid_cols, threads_per_block>>>(
+            d_temp_high, d_HL, d_HH, current_width / 2, current_height
+        );
+        cudaDeviceSynchronize();
 
-    // Copy LH to the top-right
-    cudaMemcpy2D(d_concat + (width / 2), width * sizeof(float), d_LH, (width / 2) * sizeof(float), (width / 2) * sizeof(float), height / 2, cudaMemcpyDeviceToDevice);
+        // Copy LL to the top-left
+        cudaMemcpy2D(d_image, current_width * sizeof(float), d_LL, (current_width / 2) * sizeof(float), (current_width / 2) * sizeof(float), current_height / 2, cudaMemcpyDeviceToDevice);
 
-    // Copy HL to the bottom-left
-    cudaMemcpy2D(d_concat + (height / 2) * width, width * sizeof(float), d_HL, (width / 2) * sizeof(float), (width / 2) * sizeof(float), height / 2, cudaMemcpyDeviceToDevice);
+        // Copy LH to the top-right
+        cudaMemcpy2D(d_image + (current_width / 2), current_width * sizeof(float), d_LH, (current_width / 2) * sizeof(float), (current_width / 2) * sizeof(float), current_height / 2, cudaMemcpyDeviceToDevice);
 
-    // Copy HH to the bottom-right
-    cudaMemcpy2D(d_concat + (height / 2) * width + (width / 2), width * sizeof(float), d_HH, (width / 2) * sizeof(float), (width / 2) * sizeof(float), height / 2, cudaMemcpyDeviceToDevice);
+        // Copy HL to the bottom-left
+        cudaMemcpy2D(d_image + (current_height / 2) * current_width, current_width * sizeof(float), d_HL, (current_width / 2) * sizeof(float), (current_width / 2) * sizeof(float), current_height / 2, cudaMemcpyDeviceToDevice);
+
+        // Copy HH to the bottom-right
+        cudaMemcpy2D(d_image + (current_height / 2) * current_width + (current_width / 2), current_width * sizeof(float), d_HH, (current_width / 2) * sizeof(float), (current_width / 2) * sizeof(float), current_height / 2, cudaMemcpyDeviceToDevice);
+    }
 
     // Copy concatenated result back to host
-    cudaMemcpy(channel_img, d_concat, width * height * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(channel_img, d_image, width * height * sizeof(float), cudaMemcpyDeviceToHost);
 
-    // Free concatenated memory
-    cudaFree(d_concat);
     // Free device memory
     cudaFree(d_image);
     cudaFree(d_temp_low);
